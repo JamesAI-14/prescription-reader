@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prescription Reader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        p {
+            text-align: center;
+            color: #7f8c8d;
+        }
+        .upload-box {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+            padding: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result-box {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            display: none;
+        }
+        .result-box h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .result-text {
+            white-space: pre-wrap;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #2c3e50;
+        }
+        .loading {
+            text-align: center;
+            color: #3498db;
+            font-size: 18px;
+            display: none;
+        }
+        .preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: none;
+        }
+        .disclaimer {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🩺 Prescription Reader</h1>
+    <p>Upload a photo of a handwritten prescription and the AI will read it for you!</p>
+
+    <div class="upload-box">
+        <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+        <br>
+        <img id="preview" class="preview" alt="Preview">
+        <br>
+        <button onclick="readPrescription()" id="submitBtn">Read Prescription</button>
+    </div>
+
+    <div class="loading" id="loading">
+        ⏳ Reading prescription, please wait...
+    </div>
+
+    <div class="result-box" id="resultBox">
+        <h2>📋 Results</h2>
+        <div class="result-text" id="resultText"></div>
+    </div>
+
+    <p class="disclaimer">⚠️ Always verify medications with a licensed pharmacist or doctor.</p>
+
+    <script>
+        function previewImage(event) {
+            const preview = document.getElementById("preview");
+            preview.src = URL.createObjectURL(event.target.files[0]);
+            preview.style.display = "block";
+        }
+
+        async function readPrescription() {
+            const input = document.getElementById("imageInput");
+            if (!input.files[0]) {
+                alert("Please upload an image first!");
+                return;
+            }
+
+            const btn = document.getElementById("submitBtn");
+            const loading = document.getElementById("loading");
+            const resultBox = document.getElementById("resultBox");
+            const resultText = document.getElementById("resultText");
+
+            btn.disabled = true;
+            loading.style.display = "block";
+            resultBox.style.display = "none";
+
+            const formData = new FormData();
+            formData.append("image", input.files[0]);
+
+            const response = await fetch("/read", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            loading.style.display = "none";
+            resultBox.style.display = "block";
+            resultText.textContent = data.result;
+            btn.disabled = false;
+        }
+    </script>
+
+</body>
+</html>
