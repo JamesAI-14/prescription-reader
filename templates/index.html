@@ -135,4 +135,210 @@
 
         .result-row {
             display: flex;
-            justify-content: sp
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+            gap: 12px;
+        }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #64748b; font-weight: 600; white-space: nowrap; }
+        .result-value { color: #1e293b; font-weight: 500; text-align: right; }
+
+        .med-item {
+            background: #E6F1FB;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+        }
+        .med-item:last-child { margin-bottom: 0; }
+        .med-name { font-size: 14px; font-weight: 700; color: #0C447C; }
+        .med-detail { font-size: 13px; color: #378ADD; margin-top: 4px; line-height: 1.5; }
+
+        .instructions-box {
+            background: #f8fafc;
+            border-left: 3px solid #185FA5;
+            border-radius: 0 8px 8px 0;
+            padding: 12px 14px;
+            font-size: 14px;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .right-col .card { margin-bottom: 16px; }
+        .right-col .card:last-child { margin-bottom: 0; }
+
+        .empty-state {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div style="max-width: 1000px; margin: 0 auto;">
+
+        <div class="header">
+            <div class="header-icon">&#x1F4CB;</div>
+            <div>
+                <h1>Prescription Reader</h1>
+                <p>AI-powered handwriting decoder</p>
+            </div>
+        </div>
+
+        <div class="layout">
+
+            <div class="left-col">
+                <div class="card">
+                    <div class="card-title">&#x1F4F7; Upload Prescription</div>
+                    <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+                        <span class="upload-icon">&#x2B06;</span>
+                        <p>Click to upload image</p>
+                        <span>JPG, PNG, HEIC supported</span>
+                        <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+                    </div>
+                    <img id="preview" alt="Preview">
+                    <button class="btn" onclick="readPrescription()" id="submitBtn">
+                        &#x1F50D; Read Prescription
+                    </button>
+                </div>
+
+                <div class="disclaimer">
+                    &#x26A0;&#xFE0F;
+                    <span>Always verify all medications and dosages with a licensed pharmacist or doctor before taking any medicine.</span>
+                </div>
+            </div>
+
+            <div class="right-col">
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    Reading prescription, please wait...
+                </div>
+
+                <div id="resultsArea">
+                    <div class="card">
+                        <div class="card-title">&#x1F464; Patient Info</div>
+                        <div id="patientInfo">
+                            <div class="empty-state">Upload a prescription to see results</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">&#x1F48A; Medications</div>
+                        <div id="medications">
+                            <div class="empty-state">Medications will appear here</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">&#x1F4CB; Special Instructions</div>
+                        <div id="instructions">
+                            <div class="empty-state">Instructions will appear here</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function previewImage(event) {
+            const preview = document.getElementById("preview");
+            preview.src = URL.createObjectURL(event.target.files[0]);
+            preview.style.display = "block";
+        }
+
+        async function readPrescription() {
+            const input = document.getElementById("imageInput");
+            if (!input.files[0]) {
+                alert("Please upload a prescription image first!");
+                return;
+            }
+
+            const btn = document.getElementById("submitBtn");
+            const loading = document.getElementById("loading");
+            const resultsArea = document.getElementById("resultsArea");
+
+            btn.disabled = true;
+            loading.style.display = "block";
+            resultsArea.style.opacity = "0.3";
+
+            const formData = new FormData();
+            formData.append("image", input.files[0]);
+
+            try {
+                const response = await fetch("/read", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await response.json();
+                displayResults(data.result);
+
+            } catch (error) {
+                alert("Something went wrong. Please try again.");
+            } finally {
+                btn.disabled = false;
+                loading.style.display = "none";
+                resultsArea.style.opacity = "1";
+            }
+        }
+
+        function displayResults(text) {
+            const lines = text.split("\n").map(l => l.trim()).filter(l => l);
+
+            const patientFields = ["PATIENT NAME", "AGE", "DATE", "DOCTOR", "CLINIC", "CONTACT", "DIAGNOSIS"];
+            const patientInfo = document.getElementById("patientInfo");
+            const medications = document.getElementById("medications");
+            const instructions = document.getElementById("instructions");
+
+            let patientHTML = "";
+            let medsHTML = "";
+            let instrHTML = "";
+            let inMeds = false;
+            let inInstr = false;
+
+            lines.forEach(line => {
+                if (line.startsWith("MEDICATIONS:")) { inMeds = true; inInstr = false; return; }
+                if (line.startsWith("SPECIAL INSTRUCTIONS:") || line.startsWith("INSTRUCTIONS:")) { inMeds = false; inInstr = true; return; }
+                if (line.startsWith("VITALS:") || line.startsWith("SYMPTOMS:")) { inMeds = false; inInstr = false; return; }
+
+                if (inMeds && line.match(/^\d+\./)) {
+                    const parts = line.replace(/^\d+\.\s*/, "");
+                    const dashIdx = parts.indexOf(" - ");
+                    if (dashIdx > -1) {
+                        const name = parts.substring(0, dashIdx);
+                        const detail = parts.substring(dashIdx + 3);
+                        medsHTML += `<div class="med-item"><div class="med-name">${name}</div><div class="med-detail">${detail}</div></div>`;
+                    } else {
+                        medsHTML += `<div class="med-item"><div class="med-name">${parts}</div></div>`;
+                    }
+                } else if (inInstr && line) {
+                    instrHTML += line + "<br>";
+                } else {
+                    const colonIdx = line.indexOf(":");
+                    if (colonIdx > -1) {
+                        const key = line.substring(0, colonIdx).trim();
+                        const val = line.substring(colonIdx + 1).trim();
+                        if (patientFields.includes(key) && val) {
+                            patientHTML += `<div class="result-row"><span class="result-label">${key}</span><span class="result-value">${val}</span></div>`;
+                        }
+                    }
+                }
+            });
+
+            patientInfo.innerHTML = patientHTML || "<div class='empty-state'>No patient info found</div>";
+            medications.innerHTML = medsHTML || "<div class='empty-state'>No medications found</div>";
+            instructions.innerHTML = instrHTML
+                ? `<div class="instructions-box">${instrHTML}</div>`
+                : "<div class='empty-state'>No special instructions</div>";
+        }
+    </script>
+
+</body>
+</html>
