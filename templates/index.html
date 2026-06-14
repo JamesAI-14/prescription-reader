@@ -5,153 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prescription Reader</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f4f8; min-height: 100vh; padding: 20px; }
+
+        .header {
+            background: #185FA5;
+            color: white;
+            padding: 18px 24px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
         }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-        }
-        p {
-            text-align: center;
-            color: #7f8c8d;
-        }
-        .upload-box {
+        .header-icon {
+            width: 46px; height: 46px;
             background: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+        .header h1 { font-size: 20px; font-weight: 700; }
+        .header p { font-size: 13px; color: #B5D4F4; margin-top: 2px; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        @media (max-width: 650px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #185FA5;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .upload-area {
+            border: 2px dashed #B5D4F4;
             border-radius: 10px;
-            padding: 30px;
+            padding: 32px 20px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin: 20px 0;
+            background: #E6F1FB;
+            cursor: pointer;
+            transition: background 0.2s;
         }
-        input[type="file"] {
-            margin: 20px 0;
-            padding: 10px;
+        .upload-area:hover { background: #d4e8f7; }
+        .upload-area input { display: none; }
+        .upload-icon { font-size: 36px; color: #185FA5; display: block; margin-bottom: 10px; }
+        .upload-area p { font-size: 15px; color: #0C447C; font-weight: 600; }
+        .upload-area span { font-size: 12px; color: #378ADD; margin-top: 4px; display: block; }
+
+        #preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-top: 14px;
+            display: none;
         }
-        button {
-            background-color: #3498db;
+
+        .btn {
+            background: #185FA5;
             color: white;
             border: none;
-            padding: 15px 40px;
+            padding: 14px;
             border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
             width: 100%;
+            cursor: pointer;
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
         }
-        button:hover {
-            background-color: #2980b9;
+        .btn:hover { background: #0C447C; }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        .disclaimer {
+            background: #fff8e1;
+            border: 1px solid #FAC775;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: #633806;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            margin-top: 4px;
         }
-        button:disabled {
-            background-color: #bdc3c7;
-            cursor: not-allowed;
-        }
-        .result-box {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin: 20px 0;
-            display: none;
-        }
-        .result-box h2 {
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
-        }
-        .result-text {
-            white-space: pre-wrap;
-            font-size: 16px;
-            line-height: 1.8;
-            color: #2c3e50;
-        }
+
         .loading {
             text-align: center;
-            color: #3498db;
-            font-size: 18px;
+            color: #185FA5;
+            font-size: 15px;
+            padding: 20px;
             display: none;
         }
-        .preview {
-            max-width: 100%;
-            max-height: 300px;
-            margin: 10px 0;
-            border-radius: 8px;
-            display: none;
+        .spinner {
+            width: 30px; height: 30px;
+            border: 3px solid #B5D4F4;
+            border-top-color: #185FA5;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
         }
-        .disclaimer {
-            text-align: center;
-            color: #e74c3c;
-            font-size: 13px;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-    <h1>🩺 Prescription Reader</h1>
-    <p>Upload a photo of a handwritten prescription and the AI will read it for you!</p>
-
-    <div class="upload-box">
-        <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
-        <br>
-        <img id="preview" class="preview" alt="Preview">
-        <br>
-        <button onclick="readPrescription()" id="submitBtn">Read Prescription</button>
-    </div>
-
-    <div class="loading" id="loading">
-        ⏳ Reading prescription, please wait...
-    </div>
-
-    <div class="result-box" id="resultBox">
-        <h2>📋 Results</h2>
-        <div class="result-text" id="resultText"></div>
-    </div>
-
-    <p class="disclaimer">⚠️ Always verify medications with a licensed pharmacist or doctor.</p>
-
-    <script>
-        function previewImage(event) {
-            const preview = document.getElementById("preview");
-            preview.src = URL.createObjectURL(event.target.files[0]);
-            preview.style.display = "block";
-        }
-
-        async function readPrescription() {
-            const input = document.getElementById("imageInput");
-            if (!input.files[0]) {
-                alert("Please upload an image first!");
-                return;
-            }
-
-            const btn = document.getElementById("submitBtn");
-            const loading = document.getElementById("loading");
-            const resultBox = document.getElementById("resultBox");
-            const resultText = document.getElementById("resultText");
-
-            btn.disabled = true;
-            loading.style.display = "block";
-            resultBox.style.display = "none";
-
-            const formData = new FormData();
-            formData.append("image", input.files[0]);
-
-            const response = await fetch("/read", {
-                method: "POST",
-                body: formData,
-            });
-
-            const data = await response.json();
-
-            loading.style.display = "none";
-            resultBox.style.display = "block";
-            resultText.textContent = data.result;
-            btn.disabled = false;
-        }
-    </script>
-
-</body>
-</html>
+        .result-row {
+            display: flex;
+            justify-content: sp
